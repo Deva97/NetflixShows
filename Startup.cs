@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.OpenApi.Models;
+using NetflixShows.Context;
+
+using System.Data.Common;
 
 namespace NetflixShows
 {
@@ -24,11 +24,18 @@ namespace NetflixShows
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRazorPages();
-            services.AddDbContext<>()
+            services.AddDbContext<SeriesDbContext>(option => option.UseSqlServer("Data Source=localhost;Initial Catalog=dotnet-rpg;Integrated Security=True; Trusted_Connection = true;"));
+            services.AddSwaggerGen(option =>
+            {
+            option.SwaggerDoc("v1",  new OpenApiInfo { Title = "Netflix API", Version = "v1" });
+            });
+
+            services.AddControllers();
+                
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, SeriesDbContext seriesContext)
         {
             if (env.IsDevelopment())
             {
@@ -52,6 +59,15 @@ namespace NetflixShows
             {
                 endpoints.MapRazorPages();
             });
+
+            app.UseSwagger();
+            app.UseSwaggerUI(option =>
+            {
+                option.SwaggerEndpoint("../swagger/v1/swagger.json", "Netflix API");
+            });
+
+            seriesContext.Database.EnsureCreated();
+
         }
     }
 }
